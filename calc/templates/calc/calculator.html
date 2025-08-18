@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Risk Management Machine - Pattern Pulse</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --accent-color: #3b82f6;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --dark-color: #1f2937;
+            --light-color: #f8fafc;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f8fafc;
+            color: #1f2937;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 1rem 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-weight: 800;
+            font-size: 1.75rem;
+            text-align: center;
+        }
+
+        .user-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 0.5rem;
+        }
+
+        .main-container {
+            padding: 2rem 0;
+            min-height: calc(100vh - 120px);
+        }
+
+        .calculator-section, .history-section {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            padding: 2rem;
+            height: fit-content;
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--dark-color);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Capital & Risk Section */
+        .capital-risk-section {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .input-group-custom {
+            margin-bottom: 1rem;
+        }
+
+        .input-display {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .input-display:hover {
+            border-color: var(--accent-color);
+        }
+
+        .input-value {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--dark-color);
+        }
+
+        .edit-btn {
+            background: none;
+            border: none;
+            color: var(--accent-color);
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .edit-btn:hover {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .input-edit {
+            background: white;
+            border: 2px solid var(--accent-color);
+            border-radius: 8px;
+            padding: 12px 16px;
+            width: 100%;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .save-cancel-btns {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .btn-save, .btn-cancel {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-save {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-cancel {
+            background: #6b7280;
+            color: white;
+        }
+
+        .risk-display {
+            background: linear-gradient(135deg, var(--success-color) 0%, #059669 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 1rem;
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        .risk-amount {
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-bottom: 0.25rem;
+        }
+
+        /* Stock Search Section */
+        .stock-search-section {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .search-input {
+            position: relative;
+        }
+
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+
+        .search-result-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid #f1f5f9;
+            transition: background 0.2s;
+        }
+
+        .search-result-item:hover {
+            background: #f8fafc;
+        }
+
+        /* Trade Type Section */
+        .trade-type-section {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .trade-type-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .trade-type-btn.active {
+            border-color: var(--accent-color);
+            background: var(--accent-color);
+            color: white;
+        }
+
+        /* Calculation Section */
+        .calculation-section {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .form-control {
+            border-radius: 8px;
+            border: 2px solid #e2e8f0;
+            padding: 12px 16px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        /* Targets Section */
+        .targets-section {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid #f59e0b;
+        }
+
+        .target-item {
+            background: white;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .target-label {
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+
+        .target-value {
+            font-weight: 700;
+            color: var(--success-color);
+            font-size: 1.1rem;
+        }
+
+        /* History Section */
+        .history-section {
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .history-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .table {
+            margin-bottom: 0;
+            font-size: 0.875rem;
+        }
+
+        .table th {
+            background: #f8fafc;
+            border-bottom: 2px solid #e2e8f0;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .position-indicator {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+
+        .position-indicator.buy {
+            background: #10b981;
+            color: white;
+        }
+
+        .position-indicator.sell {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, var(--accent-color), var(--success-color));
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .targets-popup {
+            position: absolute;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            max-width: 250px;
+            font-size: 0.875rem;
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 1rem 0;
+            }
+            
+            .calculator-section, .history-section {
+                padding: 1rem;
+            }
+            
+            .trade-type-section {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="container">
+            <h1>Risk Management Machine by Pattern Pulse</h1>
+            <div class="user-info">
+                <span><i class="fas fa-user-circle me-2"></i>{{ user.username }}</span>
+                <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm">
+                    <i class="fas fa-sign-out-alt me-1"></i>Logout
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container main-container">
+        <div class="row">
+            <!-- Calculator Section (Left Side) -->
+            <div class="col-lg-7">
+                <div class="calculator-section">
+                    <h2 class="section-title">
+                        <i class="fas fa-calculator"></i>
+                        Calculator
+                    </h2>
+
+                    <!-- Part 1: Capital & Risk Appetite -->
+                    <div class="capital-risk-section">
+                        <h4 class="mb-3"><i class="fas fa-wallet me-2"></i>Capital Invested & Risk Appetite</h4>
+                        
+                        <!-- Capital -->
+                        <div class="input-group-custom">
+                            <label class="form-label fw-bold">Capital (₹)</label>
+                            <div class="input-display" id="capitalDisplay">
+                                <span class="input-value" id="capitalValue">
+                                    ₹ {{ user_capital|floatformat:0 }}
+                                </span>
+                                <button class="edit-btn" onclick="editField('capital')">
+                                    <i class="fas fa-pencil-alt"></i>
+                                </button>
+                            </div>
+                            <div class="hidden" id="capitalEdit">
+                                <input type="number" class="input-edit" id="capitalInput"
+                                       value="{{ user_capital }}" step="1" min="0"
+                                       placeholder="Enter your capital">
+                                <div class="save-cancel-btns">
+                                    <button class="btn-save" onclick="saveField('capital')">
+                                        <i class="fas fa-check me-1"></i>Save
+                                    </button>
+                                    <button class="btn-cancel" onclick="cancelEdit('capital')">
+                                        <i class="fas fa-times me-1"></i>Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Risk % -->
+                        <div class="input-group-custom">
+                            <label class="form-label fw-bold">Risk % per Trade</label>
+                            <div class="input-display" id="riskDisplay">
+                                <span class="input-value" id="riskValue">
+                                    {{ user_risk_percent }}%
+                                </span>
+                                <button class="edit-btn" onclick="editField('risk')">
+                                    <i class="fas fa-pencil-alt"></i>
+                                </button>
+                            </div>
+                            <div class="hidden" id="riskEdit">
+                                <input type="number" class="input-edit" id="riskInput"
+                                       value="{{ user_risk_percent }}" step="0.01" min="0" max="100"
+                                       placeholder="Enter risk percentage">
+                                <div class="save-cancel-btns">
+                                    <button class="btn-save" onclick="saveField('risk')">
+                                        <i class="fas fa-check me-1"></i>Save
+                                    </button>
+                                    <button class="btn-cancel" onclick="cancelEdit('risk')">
+                                        <i class="fas fa-times me-1"></i>Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Risk per Trade (Auto-calculated) -->
+                        <div class="risk-display">
+                            <div class="risk-amount">₹<span id="riskPerTrade">{{ risk_rs|floatformat:2 }}</span></div>
+                            <div class="risk-label">Risk per Trade</div>
+                        </div>
+                    </div>
+
+                    <!-- Optional: Stock/Index Search -->
+                    <div class="stock-search-section">
+                        <h5 class="mb-3"><i class="fas fa-search me-2"></i>Search Stocks/Index (Optional)</h5>
+                        <div class="search-input">
+                            <input type="text" class="form-control" id="stockSearch"
+                                   placeholder="Type TCS, NIFTY, BANKNIFTY..." onkeyup="searchStocks()">
+                            <div class="search-results" id="searchResults"></div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label">Trade Type</label>
+                                    <div class="trade-type-section">
+                                        <div class="trade-type-btn active" onclick="selectTradeType('stocks')">
+                                            <i class="fas fa-chart-line me-1"></i>Stocks
+                                        </div>
+                                        <div class="trade-type-btn" onclick="selectTradeType('futures')">
+                                            <i class="fas fa-forward me-1"></i>Futures
+                                        </div>
+                                        <div class="trade-type-btn" onclick="selectTradeType('options')">
+                                            <i class="fas fa-cog me-1"></i>Options
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Position</label>
+                                    <div class="trade-type-section">
+                                        <div class="trade-type-btn active" onclick="selectPosition('buy')" id="buyBtn">
+                                            <i class="fas fa-arrow-up me-1"></i>Buy (Long)
+                                        </div>
+                                        <div class="trade-type-btn" onclick="selectPosition('sell')" id="sellBtn">
+                                            <i class="fas fa-arrow-down me-1"></i>Sell (Short)
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Part 2: Calculate Quantity -->
+                    <div class="calculation-section">
+                        <h4 class="mb-3"><i class="fas fa-calculator me-2"></i>Calculate Quantity</h4>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Entry Price (₹)</label>
+                                <input type="number" class="form-control" id="entryPrice"
+                                       placeholder="Enter entry price" step="0.01" onchange="calculateAll()">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Stop Loss (₹)</label>
+                                <input type="number" class="form-control" id="stopLoss"
+                                       placeholder="Enter stop loss" step="0.01" onchange="calculateAll()">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Risk Per Quantity (₹)</label>
+                                <input type="text" class="form-control" id="riskPerQuantity" readonly>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Quantity to Buy/Sell</label>
+                                <input type="text" class="form-control" id="quantityToBuy" readonly>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary w-100" onclick="addToHistory()">
+                            <i class="fas fa-plus me-2"></i>Add to History
+                        </button>
+                    </div>
+
+                    <!-- Part 3: Targets -->
+                    <div class="targets-section">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4><i class="fas fa-target me-2"></i>Targets</h4>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="customTargetCheck" onchange="toggleCustomTarget()">
+                                <label class="form-check-label" for="customTargetCheck">
+                                    Custom Ratio
+                                </label>
+                            </div>
+                        </div>
+
+                        <div id="targetsList">
+                            <div class="target-item">
+                                <span class="target-label">Target 1 (1:2)</span>
+                                <span class="target-value">₹<span id="target1">0.00</span></span>
+                            </div>
+                            <div class="target-item">
+                                <span class="target-label">Target 2 (1:3)</span>
+                                <span class="target-value">₹<span id="target2">0.00</span></span>
+                            </div>
+                            <div class="target-item">
+                                <span class="target-label">Target 3 (1:4)</span>
+                                <span class="target-value">₹<span id="target3">0.00</span></span>
+                            </div>
+                            <div class="target-item">
+                                <span class="target-label">Target 4 (1:5)</span>
+                                <span class="target-value">₹<span id="target4">0.00</span></span>
+                            </div>
+                        </div>
+
+                        <div class="hidden mt-3" id="customTargetSection">
+                            <div class="row">
+                                <div class="col-8">
+                                    <input type="number" class="form-control" id="customRatio"
+                                           placeholder="Enter ratio (e.g., 6 for 1:6)" step="0.1" min="1">
+                                </div>
+                                <div class="col-4">
+                                    <button class="btn btn-primary w-100" onclick="addCustomTarget()">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History Section (Right Side) -->
+            <div class="col-lg-5">
+                <div class="history-section">
+                    <div class="history-controls">
+                        <h2 class="section-title">
+                            <i class="fas fa-history"></i>
+                            History
+                        </h2>
+                        <button class="btn btn-outline-danger btn-sm" onclick="clearHistory()">
+                            <i class="fas fa-trash me-1"></i>Clear History
+                        </button>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>SN</th>
+                                    <th>Symbol</th>
+                                    <th>Position</th>
+                                    <th>Entry</th>
+                                    <th>Stop Loss</th>
+                                    <th>Risk/Qty</th>
+                                    <th>Quantity</th>
+                                    <th>Targets</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableBody">
+                                <!-- History entries will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% csrf_token %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Get values from Django template context - these come from database
+        let currentCapital = parseFloat('{{ user_capital|default:"2000000" }}');
+        let currentRisk = parseFloat('{{ user_risk_percent|default:"1" }}');
+        let currentPosition = 'buy';
+        let currentTradeType = 'stocks';
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // The values are already set from the template, just ensure formatting
+            updateCapitalDisplay();
+            updateRiskDisplay();
+            calculateRiskPerTrade();
+            loadHistory();
+        });
+
+        // Update display functions
+        function updateCapitalDisplay() {
+            document.getElementById('capitalValue').textContent = formatCurrency(currentCapital);
+            document.getElementById('capitalInput').value = currentCapital;
+        }
+
+        function updateRiskDisplay() {
+            document.getElementById('riskValue').textContent = currentRisk.toFixed(2) + '%';
+            document.getElementById('riskInput').value = currentRisk;
+        }
+
+        // Format currency for display
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-IN', {
+                style: 'currency',
+                currency: 'INR',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(amount).replace('₹', '₹ ');
+        }
+
+        // Calculate risk per trade
+        function calculateRiskPerTrade() {
+            const riskPerTrade = (currentCapital * currentRisk) / 100;
+            document.getElementById('riskPerTrade').textContent = riskPerTrade.toLocaleString('en-IN', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+            return riskPerTrade;
+        }
+
+        // Edit field functionality
+        function editField(field) {
+            document.getElementById(field + 'Display').classList.add('hidden');
+            document.getElementById(field + 'Edit').classList.remove('hidden');
+            document.getElementById(field + 'Input').focus();
+        }
+
+        function cancelEdit(field) {
+            document.getElementById(field + 'Display').classList.remove('hidden');
+            document.getElementById(field + 'Edit').classList.add('hidden');
+            
+            // Reset to current values
+            if (field === 'capital') {
+                document.getElementById('capitalInput').value = currentCapital;
+            } else if (field === 'risk') {
+                document.getElementById('riskInput').value = currentRisk;
+            }
+        }
+
+        function saveField(field) {
+            const input = document.getElementById(field + 'Input');
+            const value = parseFloat(input.value);
+            
+            if (isNaN(value)) {
+                showMessage('Please enter a valid number', 'danger');
+                return;
+            }
+            
+            if (field === 'capital' && value < 0) {
+                showMessage('Capital cannot be negative', 'danger');
+                return;
+            }
+            
+            if (field === 'risk' && (value < 0 || value > 100)) {
+                showMessage('Risk percentage must be between 0 and 100', 'danger');
+                return;
+            }
+            
+            // Update local values
+            if (field === 'capital') {
+                currentCapital = value;
+                updateCapitalDisplay();
+            } else if (field === 'risk') {
+                currentRisk = value;
+                updateRiskDisplay();
+            }
+            
+            calculateRiskPerTrade();
+            cancelEdit(field);
+            
+            // Save to backend
+            saveSettings();
+        }
+
+        // Save settings to backend
+        function saveSettings() {
+            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            
+            fetch('/api/update-settings/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({
+                    capital: currentCapital,
+                    risk_percent: currentRisk
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage('Settings saved successfully!', 'success');
+                } else {
+                    showMessage(data.message || 'Error saving settings', 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showMessage('Error saving settings', 'danger');
+            });
+        }
+
+        // Trade type and position selection
+        function selectTradeType(type) {
+            currentTradeType = type;
+            document.querySelectorAll('.trade-type-section .trade-type-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.closest('.trade-type-btn').classList.add('active');
+        }
+
+        function selectPosition(position) {
+            currentPosition = position;
+            document.getElementById('buyBtn').classList.remove('active');
+            document.getElementById('sellBtn').classList.remove('active');
+            document.getElementById(position + 'Btn').classList.add('active');
+        }
+
+        // Calculate all values
+        function calculateAll() {
+            const entryPrice = parseFloat(document.getElementById('entryPrice').value) || 0;
+            const stopLoss = parseFloat(document.getElementById('stopLoss').value) || 0;
+            
+            if (entryPrice <= 0 || stopLoss <= 0) return;
+            
+            let riskPerQuantity;
+            if (currentPosition === 'buy') {
+                if (entryPrice <= stopLoss) {
+                    showMessage('For long positions, entry price must be higher than stop loss', 'danger');
+                    return;
+                }
+                riskPerQuantity = entryPrice - stopLoss;
+            } else {
+                if (entryPrice >= stopLoss) {
+                    showMessage('For short positions, entry price must be lower than stop loss', 'danger');
+                    return;
+                }
+                riskPerQuantity = stopLoss - entryPrice;
+            }
+            
+            const riskPerTrade = calculateRiskPerTrade();
+            const quantity = Math.floor(riskPerTrade / riskPerQuantity);
+            
+            document.getElementById('riskPerQuantity').value = riskPerQuantity.toFixed(2);
+            document.getElementById('quantityToBuy').value = quantity;
+            
+            calculateTargets(entryPrice, riskPerQuantity);
+        }
+
+        // Calculate targets
+        function calculateTargets(entryPrice, riskPerQuantity) {
+            for (let i = 1; i <= 4; i++) {
+                const ratio = i + 1;
+                let targetPrice;
+                
+                if (currentPosition === 'buy') {
+                    targetPrice = entryPrice + (riskPerQuantity * ratio);
+                } else {
+                    targetPrice = entryPrice - (riskPerQuantity * ratio);
+                }
+                
+                document.getElementById('target' + i).textContent = targetPrice.toFixed(2);
+            }
+        }
+
+        // Stock search functionality
+        function searchStocks() {
+            const query = document.getElementById('stockSearch').value.toLowerCase();
+            const resultsDiv = document.getElementById('searchResults');
+            
+            if (query.length < 1) {
+                resultsDiv.style.display = 'none';
+                return;
+            }
+            
+            // Sample NSE stocks for demo
+            const nseStocks = [
+                { symbol: 'TCS', name: 'Tata Consultancy Services', price: 3456.75, sector: 'IT' },
+                { symbol: 'RELIANCE', name: 'Reliance Industries Ltd', price: 2345.60, sector: 'Oil & Gas' },
+                { symbol: 'HDFCBANK', name: 'HDFC Bank Ltd', price: 1678.90, sector: 'Banking' },
+                { symbol: 'INFY', name: 'Infosys Ltd', price: 1456.30, sector: 'IT' },
+                { symbol: 'ICICIBANK', name: 'ICICI Bank Ltd', price: 987.45, sector: 'Banking' },
+                { symbol: 'SBIN', name: 'State Bank of India', price: 567.80, sector: 'Banking' },
+                { symbol: 'WIPRO', name: 'Wipro Ltd', price: 567.30, sector: 'IT' },
+                { symbol: 'NIFTY50', name: 'Nifty 50 Index', price: 19654.30, sector: 'Index' },
+                { symbol: 'BANKNIFTY', name: 'Bank Nifty Index', price: 43567.80, sector: 'Index' },
+                { symbol: 'MARUTI', name: 'Maruti Suzuki India Ltd', price: 9876.50, sector: 'Auto' }
+            ];
+            
+            // Filter stocks based on query
+            const filteredStocks = nseStocks.filter(stock =>
+                stock.symbol.toLowerCase().includes(query) ||
+                stock.name.toLowerCase().includes(query) ||
+                stock.sector.toLowerCase().includes(query)
+            );
+            
+            // If no matches found, allow manual entry
+            if (filteredStocks.length === 0) {
+                resultsDiv.innerHTML = `
+                    <div class="search-result-item" onclick="selectManualStock('${query.toUpperCase()}')">
+                        <strong>${query.toUpperCase()}</strong> - Manual Entry<br>
+                        <small class="text-muted">Click to add as custom stock</small>
+                    </div>
+                `;
+                resultsDiv.style.display = 'block';
+            } else {
+                // Show matching stocks
+                resultsDiv.innerHTML = filteredStocks.slice(0, 10).map(stock => `
+                    <div class="search-result-item" onclick="selectStock('${stock.symbol}', '${stock.name}', ${stock.price})">
+                        <strong>${stock.symbol}</strong> - ${stock.name}<br>
+                        <small class="text-muted">Sector: ${stock.sector} | Last Price: ₹${stock.price}</small>
+                    </div>
+                `).join('');
+                
+                // Add manual entry option if query doesn't exactly match
+                if (!nseStocks.some(stock => stock.symbol.toLowerCase() === query.toLowerCase())) {
+                    resultsDiv.innerHTML += `
+                        <div class="search-result-item" onclick="selectManualStock('${query.toUpperCase()}')">
+                            <strong>${query.toUpperCase()}</strong> - Manual Entry<br>
+                            <small class="text-muted">Click to add as custom stock</small>
+                        </div>
+                    `;
+                }
+                
+                resultsDiv.style.display = 'block';
+            }
+        }
+
+        function selectStock(symbol, name, price) {
+            document.getElementById('stockSearch').value = `${symbol} - ${name}`;
+            document.getElementById('entryPrice').value = price;
+            document.getElementById('searchResults').style.display = 'none';
+            calculateAll();
+        }
+
+        function selectManualStock(symbol) {
+            document.getElementById('stockSearch').value = symbol;
+            document.getElementById('searchResults').style.display = 'none';
+            showMessage('Manual stock selected. Please enter the entry price manually.', 'info');
+        }
+
+        // Custom target functionality
+        function toggleCustomTarget() {
+            const checkbox = document.getElementById('customTargetCheck');
+            const section = document.getElementById('customTargetSection');
+            
+            if (checkbox.checked) {
+                section.classList.remove('hidden');
+            } else {
+                section.classList.add('hidden');
+            }
+        }
+
+        function addCustomTarget() {
+            const ratio = parseFloat(document.getElementById('customRatio').value);
+            if (!ratio || ratio < 1) return;
+            
+            const entryPrice = parseFloat(document.getElementById('entryPrice').value) || 0;
+            const stopLoss = parseFloat(document.getElementById('stopLoss').value) || 0;
+            
+            if (entryPrice <= 0 || stopLoss <= 0) {
+                showMessage('Please enter entry price and stop loss first', 'warning');
+                return;
+            }
+            
+            const riskPerQuantity = Math.abs(entryPrice - stopLoss);
+            let targetPrice;
+            
+            if (currentPosition === 'buy') {
+                targetPrice = entryPrice + (riskPerQuantity * ratio);
+            } else {
+                targetPrice = entryPrice - (riskPerQuantity * ratio);
+            }
+            
+            const targetItem = document.createElement('div');
+            targetItem.className = 'target-item';
+            targetItem.innerHTML = `
+                <span class="target-label">Custom Target (1:${ratio})</span>
+                <span class="target-value">₹${targetPrice.toFixed(2)}</span>
+            `;
+            
+            document.getElementById('targetsList').appendChild(targetItem);
+            document.getElementById('customRatio').value = '';
+        }
+
+        // History functions
+        function addToHistory() {
+            const entryPrice = parseFloat(document.getElementById('entryPrice').value);
+            const stopLoss = parseFloat(document.getElementById('stopLoss').value);
+            const riskPerQuantity = parseFloat(document.getElementById('riskPerQuantity').value);
+            const quantity = parseInt(document.getElementById('quantityToBuy').value);
+            const symbol = document.getElementById('stockSearch').value || 'Manual Entry';
+            
+            if (!entryPrice || entryPrice <= 0) {
+                showMessage('Please enter a valid entry price', 'warning');
+                return;
+            }
+            
+            if (!stopLoss || stopLoss <= 0) {
+                showMessage('Please enter a valid stop loss', 'warning');
+                return;
+            }
+            
+            if (!riskPerQuantity || riskPerQuantity <= 0) {
+                showMessage('Please calculate risk per quantity first', 'warning');
+                return;
+            }
+            
+            // Get all targets including custom targets
+            const targets = [];
+            
+            // Standard targets (1:2, 1:3, 1:4, 1:5)
+            for (let i = 1; i <= 4; i++) {
+                const targetValue = document.getElementById('target' + i).textContent;
+                if (targetValue && targetValue !== '0.00') {
+                    targets.push(`T${i}(1:${i+1}): ₹${targetValue}`);
+                }
+            }
+            
+            // Custom targets
+            const customTargetElements = document.querySelectorAll('#targetsList .target-item:nth-child(n+5)');
+            customTargetElements.forEach((element, index) => {
+                const labelElement = element.querySelector('.target-label');
+                const valueElement = element.querySelector('.target-value');
+                if (labelElement && valueElement) {
+                    const label = labelElement.textContent.trim();
+                    const value = valueElement.textContent.trim();
+                    targets.push(`${label}: ${value}`);
+                }
+            });
+            
+            const calculationData = {
+                symbol: symbol.split(' - ')[0],
+                entry_price: entryPrice,
+                stop_loss: stopLoss,
+                risk_per_quantity: riskPerQuantity,
+                quantity: quantity || 0,
+                targets: targets.join(' | '),
+                direction: currentPosition === 'buy' ? 'Buy (Long)' : 'Sell (Short)',
+                timestamp: new Date().toLocaleString('en-IN')
+            };
+            
+            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            
+            // Save to backend
+            fetch('/api/save-calculation/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify(calculationData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    addToHistoryTable(data.calculation);
+                    clearCalculationForm();
+                    showMessage('Entry added to history!', 'success');
+                } else {
+                    showMessage(data.message || 'Error saving calculation', 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error saving calculation:', error);
+                showMessage('Error saving calculation: ' + error.message, 'danger');
+            });
+        }
+
+        function addToHistoryTable(calculation) {
+            const tbody = document.getElementById('historyTableBody');
+            const row = document.createElement('tr');
+            
+            // Format the row data
+            const serialNumber = calculation.id || (tbody.children.length + 1);
+            const symbol = calculation.symbol || 'N/A';
+            const entryPrice = calculation.entry_price ? calculation.entry_price.toFixed(2) : '0.00';
+            const stopLoss = calculation.stop_loss ? calculation.stop_loss.toFixed(2) : '0.00';
+            const riskPerQuantity = calculation.risk_per_quantity ? calculation.risk_per_quantity.toFixed(2) : '0.00';
+            const quantity = calculation.quantity || 0;
+            const targets = calculation.targets || 'No targets';
+            const direction = calculation.direction || (currentPosition === 'buy' ? 'Buy (Long)' : 'Sell (Short)');
+            
+            // Determine position type for styling
+            const isBuyPosition = direction.toLowerCase().includes('buy') || direction.toLowerCase().includes('long');
+            const positionIndicatorClass = isBuyPosition ? 'buy' : 'sell';
+            const positionText = isBuyPosition ? 'BUY' : 'SELL';
+            
+            row.innerHTML = `
+                <td><strong>${serialNumber}</strong></td>
+                <td><strong>${symbol}</strong></td>
+                <td>
+                    <span class="position-indicator ${positionIndicatorClass}">
+                        ${positionText}
+                    </span>
+                </td>
+                <td>₹${entryPrice}</td>
+                <td>₹${stopLoss}</td>
+                <td>₹${riskPerQuantity}</td>
+                <td><strong>${quantity}</strong></td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary"
+                            onmouseover="showTargetsPopup(event, '${targets.replace(/'/g, '&#39;')}')"
+                            onmouseout="hideTargetsPopup()"
+                            title="View Targets">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </td>
+            `;
+            
+            // Insert at the beginning
+            tbody.insertBefore(row, tbody.firstChild);
+            
+            // Keep only last 50 entries
+            while (tbody.children.length > 50) {
+                tbody.removeChild(tbody.lastChild);
+            }
+        }
+
+        function loadHistory() {
+            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            
+            fetch('/api/get-history/', {
+                headers: {
+                    'X-CSRFToken': csrftoken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.history.length > 0) {
+                    const tbody = document.getElementById('historyTableBody');
+                    tbody.innerHTML = '';
+                    
+                    data.history.forEach(entry => {
+                        addToHistoryTable(entry);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error loading history:', error);
+            });
+        }
+
+        function clearHistory() {
+            if (confirm('Are you sure you want to clear all history?')) {
+                const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                
+                fetch('/api/clear-history/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrftoken
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('historyTableBody').innerHTML = '';
+                        showMessage('History cleared!', 'success');
+                    } else {
+                        showMessage(data.message || 'Error clearing history', 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showMessage('Error clearing history', 'danger');
+                });
+            }
+        }
+
+        function clearCalculationForm() {
+            document.getElementById('entryPrice').value = '';
+            document.getElementById('stopLoss').value = '';
+            document.getElementById('riskPerQuantity').value = '';
+            document.getElementById('quantityToBuy').value = '';
+            document.getElementById('stockSearch').value = '';
+            
+            for (let i = 1; i <= 4; i++) {
+                document.getElementById('target' + i).textContent = '0.00';
+            }
+            
+            const targetsList = document.getElementById('targetsList');
+            const customTargets = targetsList.querySelectorAll('.target-item:nth-child(n+5)');
+            customTargets.forEach(target => target.remove());
+            
+            document.getElementById('customTargetCheck').checked = false;
+            document.getElementById('customTargetSection').classList.add('hidden');
+        }
+
+        // Popup functions
+        function showTargetsPopup(event, targets) {
+            const popup = document.createElement('div');
+            popup.className = 'targets-popup';
+            popup.innerHTML = targets.replace(/ \| /g, '<br>');
+            popup.id = 'targetsPopup';
+            
+            document.body.appendChild(popup);
+            
+            const rect = event.target.getBoundingClientRect();
+            popup.style.position = 'fixed';
+            popup.style.left = rect.left + 'px';
+            popup.style.top = (rect.top - popup.offsetHeight - 10) + 'px';
+        }
+
+        function hideTargetsPopup() {
+            const popup = document.getElementById('targetsPopup');
+            if (popup) {
+                popup.remove();
+            }
+        }
+
+        function showMessage(message, type) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+            alertDiv.style.top = '100px';
+            alertDiv.style.right = '20px';
+            alertDiv.style.zIndex = '9999';
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.body.appendChild(alertDiv);
+            
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 3000);
+        }
+
+        // Event listeners
+        document.addEventListener('click', function(event) {
+            const searchInput = document.getElementById('stockSearch');
+            const searchResults = document.getElementById('searchResults');
+            
+            if (!searchInput.contains(event.target) && !searchResults.contains(event.target)) {
+                searchResults.style.display = 'none';
+            }
+        });
+
+        document.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                const activeElement = document.activeElement;
+                
+                if (activeElement.id === 'capitalInput') {
+                    saveField('capital');
+                } else if (activeElement.id === 'riskInput') {
+                    saveField('risk');
+                } else if (activeElement.id === 'entryPrice' || activeElement.id === 'stopLoss') {
+                    calculateAll();
+                } else if (activeElement.id === 'customRatio') {
+                    addCustomTarget();
+                }
+            }
+        });
+    </script>
+</body>
+</html>

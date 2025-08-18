@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Risk Management Calculator - By Lovey Gandhi</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --navy-bg: #252E49;
+            --lavender: #A3ADEE;
+            --soft-text: #E2E6F3;
+            --white: #FFFFFF;
+        }
+        
+        body {
+            background: linear-gradient(135deg, var(--navy-bg) 0%, #1a2238 100%);
+            color: var(--soft-text);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+        
+        .hero-section {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero-content {
+            z-index: 2;
+            position: relative;
+        }
+        
+        .hero-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><defs><linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%23A3ADEE" stop-opacity="0.1"/><stop offset="100%" stop-color="%23252E49" stop-opacity="0.05"/></linearGradient></defs><polygon fill="url(%23grad1)" points="0,1000 1000,800 1000,1000"/></svg>') no-repeat center center;
+            background-size: cover;
+            opacity: 0.3;
+        }
+        
+        .feature-card {
+            background: rgba(37, 46, 73, 0.8);
+            border: 2px solid var(--lavender);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            height: 100%;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(163, 173, 238, 0.2);
+        }
+        
+        .feature-icon {
+            background: linear-gradient(45deg, var(--lavender), #8a95e8);
+            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(45deg, var(--lavender), #8a95e8);
+            border: none;
+            border-radius: 50px;
+            padding: 15px 40px;
+            font-weight: bold;
+            color: var(--navy-bg);
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(163, 173, 238, 0.4);
+        }
+        
+        .btn-outline-light {
+            border: 2px solid var(--lavender);
+            color: var(--lavender);
+            border-radius: 50px;
+            padding: 15px 40px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-outline-light:hover {
+            background-color: var(--lavender);
+            color: var(--navy-bg);
+            transform: translateY(-3px);
+        }
+        
+        .calculator-preview {
+            background: rgba(37, 46, 73, 0.9);
+            border: 3px solid var(--lavender);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(15px);
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        .floating {
+            animation: float 6s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="hero-section">
+        <div class="hero-bg"></div>
+        <div class="container hero-content">
+            <div class="row align-items-center">
+                <div class="col-lg-6 mb-5 mb-lg-0">
+                    <div class="floating">
+                        <h1 class="display-4 fw-bold text-white mb-4">
+                            Risk Management
+                            <span style="color: var(--lavender);">Calculator</span>
+                        </h1>
+                        <p class="lead mb-4">
+                            Professional trading risk calculator to optimize your position sizing, calculate stop losses,
+                            and determine profit targets. Make informed trading decisions with precise risk management.
+                        </p>
+                        <p class="mb-4 text-muted">
+                            <i class="fas fa-user-circle me-2"></i>
+                            <strong>Created by Lovey Gandhi</strong>
+                        </p>
+                        
+                        <div class="d-flex flex-column flex-sm-row gap-3">
+                            <a href="{% url 'login' %}" class="btn btn-primary">
+                                <i class="fas fa-sign-in-alt me-2"></i>Get Started
+                            </a>
+                            <a href="{% url 'register' %}" class="btn btn-outline-light">
+                                <i class="fas fa-user-plus me-2"></i>Create Account
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-6">
+                    <div class="calculator-preview">
+                        <div class="text-center mb-4">
+                            <div class="feature-icon">
+                                <i class="fas fa-calculator fa-2x text-white"></i>
+                            </div>
+                            <h4 class="text-white">Live Calculator Preview</h4>
+                        </div>
+                        
+                        <!-- Mini calculator preview -->
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <label class="form-label small">Capital (₹)</label>
+                                <input type="text" class="form-control form-control-sm" value="100,000" readonly>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small">Risk (%)</label>
+                                <input type="text" class="form-control form-control-sm" value="2.0" readonly>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small">Entry Price</label>
+                                <input type="text" class="form-control form-control-sm" value="500.00" readonly>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small">Stop Loss</label>
+                                <input type="text" class="form-control form-control-sm" value="480.00" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3 p-3" style="background: var(--lavender); border-radius: 10px; color: var(--navy-bg);">
+                            <div class="row text-center">
+                                <div class="col-6">
+                                    <small><strong>Quantity</strong></small>
+                                    <div class="h5 mb-0">100</div>
+                                </div>
+                                <div class="col-6">
+                                    <small><strong>Risk Amount</strong></small>
+                                    <div class="h5 mb-0">₹2,000</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Features Section -->
+    <section class="py-5" style="background: rgba(26, 34, 56, 0.8);">
+        <div class="container">
+            <div class="row text-center mb-5">
+                <div class="col-12">
+                    <h2 class="display-5 fw-bold text-white mb-4">Key Features</h2>
+                    <p class="lead text-muted">Everything you need for professional risk management</p>
+                </div>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-3">
+                    <div class="feature-card p-4 text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-chart-line fa-2x text-white"></i>
+                        </div>
+                        <h5 class="text-white mb-3">Position Sizing</h5>
+                        <p class="text-muted">Calculate optimal position size based on your capital and risk tolerance</p>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 col-lg-3">
+                    <div class="feature-card p-4 text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-bullseye fa-2x text-white"></i>
+                        </div>
+                        <h5 class="text-white mb-3">Target Calculation</h5>
+                        <p class="text-muted">Automatically calculate multiple profit targets with custom ratios</p>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 col-lg-3">
+                    <div class="feature-card p-4 text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-history fa-2x text-white"></i>
+                        </div>
+                        <h5 class="text-white mb-3">Trade History</h5>
+                        <p class="text-muted">Track and analyze your past calculations and trading decisions</p>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 col-lg-3">
+                    <div class="feature-card p-4 text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-shield-alt fa-2x text-white"></i>
+                        </div>
+                        <h5 class="text-white mb-3">Risk Control</h5>
+                        <p class="text-muted">Built-in validation ensures proper risk-reward ratios</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- How it Works Section -->
+    <section class="py-5">
+        <div class="container">
+            <div class="row text-center mb-5">
+                <div class="col-12">
+                    <h2 class="display-5 fw-bold text-white mb-4">How It Works</h2>
+                    <p class="lead text-muted">Simple steps to calculate your trading risk</p>
+                </div>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-lg-3 text-center">
+                    <div class="mb-3">
+                        <div class="feature-icon mx-auto" style="background: linear-gradient(45deg, #28a745, #20c997);">
+                            <span class="text-white fw-bold fs-2">1</span>
+                        </div>
+                    </div>
+                    <h5 class="text-white">Set Your Capital</h5>
+                    <p class="text-muted">Enter your total trading capital and risk percentage per trade</p>
+                </div>
+                
+                <div class="col-lg-3 text-center">
+                    <div class="mb-3">
+                        <div class="feature-icon mx-auto" style="background: linear-gradient(45deg, #17a2b8, #6f42c1);">
+                            <span class="text-white fw-bold fs-2">2</span>
+                        </div>
+                    </div>
+                    <h5 class="text-white">Enter Trade Details</h5>
+                    <p class="text-muted">Input your entry price, stop loss, and trade direction</p>
+                </div>
+                
+                <div class="col-lg-3 text-center">
+                    <div class="mb-3">
+                        <div class="feature-icon mx-auto" style="background: linear-gradient(45deg, #fd7e14, #dc3545);">
+                            <span class="text-white fw-bold fs-2">3</span>
+                        </div>
+                    </div>
+                    <h5 class="text-white">Get Calculations</h5>
+                    <p class="text-muted">Instantly see position size, targets, and risk amounts</p>
+                </div>
+                
+                <div class="col-lg-3 text-center">
+                    <div class="mb-3">
+                        <div class="feature-icon mx-auto" style="background: linear-gradient(45deg, #6f42c1, var(--lavender));">
+                            <span class="text-white fw-bold fs-2">4</span>
+                        </div>
+                    </div>
+                    <h5 class="text-white">Save & Track</h5>
+                    <p class="text-muted">Save calculations to history and track your trading performance</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Footer -->
+    <footer class="py-4 text-center" style="background: rgba(37, 46, 73, 0.9); border-top: 2px solid var(--lavender);">
+        <div class="container">
+            <p class="mb-2 text-muted">
+                &copy; 2024 Risk Management Calculator. Created with ❤️ by <strong style="color: var(--lavender);">Lovey Gandhi</strong>
+            </p>
+            <p class="small text-muted mb-0">
+                Professional trading tools for informed risk management decisions
+            </p>
+        </div>
+    </footer>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+

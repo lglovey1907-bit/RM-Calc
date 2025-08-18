@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Risk Management Machine</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+        }
+        
+        .login-header {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .login-header h2 {
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+            font-size: 1.75rem;
+        }
+        
+        .login-header p {
+            margin: 0;
+            opacity: 0.9;
+            font-size: 0.95rem;
+        }
+        
+        .login-body {
+            padding: 2rem;
+        }
+        
+        .form-label {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-control {
+            border-radius: 8px;
+            border: 2px solid #e5e7eb;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .btn-login {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            border: none;
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+        }
+        
+        .register-link {
+            text-align: center;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e5e7eb;
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+        
+        .register-link a {
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .register-link a:hover {
+            text-decoration: underline;
+        }
+        
+        .logo-icon {
+            width: 60px;
+            height: 60px;
+            background: white;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 1.5rem;
+            color: #3b82f6;
+            font-weight: bold;
+        }
+        
+        .alert {
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+        
+        .brand-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            opacity: 0.95;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="login-header">
+            <div class="logo-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="brand-title">Risk Management Machine</div>
+            <h2>Welcome Back</h2>
+            <p>Sign in to continue to your dashboard</p>
+        </div>
+        
+        <div class="login-body">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+            <form method="POST" action="{% url 'login' %}">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label for="username" class="form-label">
+                        <i class="fas fa-user me-1"></i> Username
+                    </label>
+                    <input type="text" class="form-control" id="username" name="username"
+                           placeholder="Enter your username" required autofocus>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="password" class="form-label">
+                        <i class="fas fa-lock me-1"></i> Password
+                    </label>
+                    <input type="password" class="form-control" id="password" name="password"
+                           placeholder="Enter your password" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-login">
+                    <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                </button>
+            </form>
+            
+            <div class="register-link">
+                Don't have an account?
+                <a href="{% url 'register' %}">Create one now</a>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
