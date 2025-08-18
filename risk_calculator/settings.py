@@ -1,16 +1,16 @@
 import os
-from decouple import config
 from pathlib import Path
+from decouple import config
 from django.contrib.messages import constants as messages
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-# This reads from .env file
-SECRET_KEY = config('SECRET_KEY')
-DEBUG = config('DEBUG', cast=bool)
-ALLOWED_HOSTS = config('ALLOWED_HOSTS').split(',')
+# Production-safe defaults
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-CHANGE-THIS-IN-PRODUCTION')
+DEBUG = config('DEBUG', default='False', cast=bool)
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,rm-calc.onrender.com,.onrender.com').split(',')
 
 # Application definition
 INSTALLED_APPS = [
@@ -28,15 +28,14 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # if you're using whitenoise
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Must be after SecurityMiddleware
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  # Must be before CommonMiddleware
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
 ]
 
 ROOT_URLCONF = 'risk_calculator.urls'
@@ -95,20 +94,24 @@ STATIC_URL = '/static/'
 # Static files configuration
 STATICFILES_FINDERS = [
     'django.contrib.staticfiles.finders.FileSystemFinder',
-    'django.contrib.staticfiles.finders.AppDirectoriesFinder',  # This finds app/static/ folders
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
 ]
 
 # For production - where collected static files go
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Login/Logout redirects
+# Authentication and Login Settings
+LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/calculator/'
 LOGOUT_REDIRECT_URL = '/'
+
+# Session Settings
+SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
+SESSION_SAVE_EVERY_REQUEST = True  # Update session on every request
 
 # Messages framework
 MESSAGE_TAGS = {
@@ -118,33 +121,14 @@ MESSAGE_TAGS = {
     messages.WARNING: 'alert-warning',
     messages.ERROR: 'alert-danger',
 }
-# Add these lines to your risk_calculator/settings.py file
-
-# At the bottom of the file, add:
-
-# Login URLs
-LOGIN_URL = '/login/'
-LOGIN_REDIRECT_URL = '/'
-LOGOUT_REDIRECT_URL = '/login/'
-
-# If you want to use sessions, also ensure you have:
-SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
-SESSION_SAVE_EVERY_REQUEST = True  # Update session on every request to keep user logged in
 
 # CORS settings (for PWA access)
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
+    "http://localhost:8000",
     "http://127.0.0.1:8000",
+    "https://rm-calc.onrender.com",
 ]
 
-# Security settings for production
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.herokuapp.com']
-
-
-# Database - keep SQLite for free tier
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+# Add CORS for development
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
