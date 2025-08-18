@@ -8,3 +8,5 @@ staticfiles/
 venv/
 .idea/
 .vscode/
+.env
+test_env
