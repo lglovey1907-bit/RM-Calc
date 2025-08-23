@@ -3,6 +3,14 @@ import dj_database_url  # Add this import
 from pathlib import Path
 from decouple import config
 from django.contrib.messages import constants as messages
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Razorpay Configuration
+RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID')
+RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET')
+RAZORPAY_WEBHOOK_SECRET = os.environ.get('RAZORPAY_WEBHOOK_SECRET')
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,11 +29,27 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'calc',  # Your app
+    'django.contrib.sites',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
     'subscription',
     'rest_framework',
     'corsheaders',
-]
+    'calc',  # Your app
+]  # <- This bracket should be HERE, closing INSTALLED_APPS
+
+# Allauth settings (These should be OUTSIDE the INSTALLED_APPS list)
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/'
+ACCOUNT_EMAIL_VERIFICATION = 'none'  # Disable email verification for now
+ACCOUNT_AUTHENTICATION_METHOD = 'username_email'
+ACCOUNT_EMAIL_REQUIRED = False
+
+# Add SITE_ID for django-allauth
+SITE_ID = 1
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -37,7 +61,19 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    
+    'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # if you're using whitenoise
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  # if you're using cors-headers
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'allauth.account.middleware.AccountMiddleware',  # Add this line
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
 
 ROOT_URLCONF = 'risk_calculator.urls'
 
@@ -111,9 +147,9 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Authentication and Login Settings
-LOGIN_URL = '/login/'
-LOGIN_REDIRECT_URL = '/calculator/'
-LOGOUT_REDIRECT_URL = '/'
+#LOGIN_URL = '/login/'
+#LOGIN_REDIRECT_URL = '/calculator/'
+#LOGOUT_REDIRECT_URL = '/'
 
 # Session Settings
 SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
@@ -138,3 +174,38 @@ CORS_ALLOWED_ORIGINS = [
 # Add CORS for development
 if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
+
+
+# Add these at the end of settings.py
+LOGIN_URL = '/accounts/login/'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/'
+
+# Static files
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')] if os.path.exists(os.path.join(BASE_DIR, 'static')) else []
+
+# Media files
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Razorpay settings (we'll use these later)
+RAZORPAY_KEY_ID = config('RAZORPAY_KEY_ID', default='')
+RAZORPAY_KEY_SECRET = config('RAZORPAY_KEY_SECRET', default='')
+RAZORPAY_WEBHOOK_SECRET = config('RAZORPAY_WEBHOOK_SECRET', default='')
+
+# Razorpay settings
+RAZORPAY_KEY_ID = 'your_razorpay_key_id'  # Replace with your actual key
+RAZORPAY_KEY_SECRET = 'your_razorpay_key_secret'  # Replace with your actual secret
+RAZORPAY_WEBHOOK_SECRET = 'your_webhook_secret'  # Replace with your webhook secret
+
+# Razorpay settings (add your actual credentials later)
+RAZORPAY_KEY_ID = 'your_key_id'
+RAZORPAY_KEY_SECRET = 'your_key_secret'
+RAZORPAY_WEBHOOK_SECRET = 'your_webhook_secret'
+
+# Razorpay settings (placeholder values)
+RAZORPAY_KEY_ID = 'placeholder_key_id'
+RAZORPAY_KEY_SECRET = 'placeholder_key_secret'
+RAZORPAY_WEBHOOK_SECRET = 'placeholder_webhook_secret'
