@@ -18,6 +18,8 @@ import hashlib
 import logging
 import yfinance as yf
 from django.core.cache import cache
+import requests
+from datetime import datetime, timedelta
 
 from .models import (
     UserSettings,
@@ -353,7 +355,7 @@ def clear_history(request):
         })
 
 
-# ============ Stock Search API - Enhanced for NIFTY 500 + Indices ============
+# ============ Enhanced Stock Search API with Real-time Data ============
 
 def get_comprehensive_nse_indices():
     """Get comprehensive list of NSE indices with their yfinance symbols"""
@@ -475,7 +477,7 @@ def get_nifty_500_stocks():
         'UPL': 'UPL Limited',
         'WIPRO': 'Wipro Limited',
         
-        # NIFTY Next 50 & Additional NIFTY 500 Stocks
+        # Additional popular stocks
         'ABB': 'ABB India Limited',
         'ACC': 'ACC Limited',
         'AUBANK': 'AU Small Finance Bank Limited',
@@ -492,7 +494,6 @@ def get_nifty_500_stocks():
         'BERGEPAINT': 'Berger Paints India Limited',
         'BIOCON': 'Biocon Limited',
         'BOSCHLTD': 'Bosch Limited',
-        'CADILAHC': 'Cadila Healthcare Limited',
         'CHOLAFIN': 'Cholamandalam Investment and Finance Company Limited',
         'COLPAL': 'Colgate Palmolive (India) Limited',
         'CONCOR': 'Container Corporation of India Limited',
@@ -521,12 +522,10 @@ def get_nifty_500_stocks():
         'LTIM': 'LTIMindtree Limited',
         'LUPIN': 'Lupin Limited',
         'MARICO': 'Marico Limited',
-        'MCDOWELL-N': 'United Spirits Limited',
         'MFSL': 'Max Financial Services Limited',
         'MPHASIS': 'Mphasis Limited',
         'MRF': 'MRF Limited',
         'NAUKRI': 'Info Edge (India) Limited',
-        'NAVINFLUOR': 'Navin Fluorine International Limited',
         'NMDC': 'NMDC Limited',
         'OBEROIRLTY': 'Oberoi Realty Limited',
         'OFSS': 'Oracle Financial Services Software Limited',
@@ -539,7 +538,6 @@ def get_nifty_500_stocks():
         'PNB': 'Punjab National Bank',
         'POLYCAB': 'Polycab India Limited',
         'PVR': 'PVR Limited',
-        'RAMCOCEM': 'The Ramco Cements Limited',
         'RBLBANK': 'RBL Bank Limited',
         'RECLTD': 'REC Limited',
         'SAIL': 'Steel Authority of India Limited',
@@ -554,171 +552,140 @@ def get_nifty_500_stocks():
         'WHIRLPOOL': 'Whirlpool of India Limited',
         'ZEEL': 'Zee Entertainment Enterprises Limited',
         'ZOMATO': 'Zomato Limited',
-        
-        # Additional NIFTY 500 Stocks (Midcap & Smallcap) - Selection of most important ones
-        'AARTIIND': 'Aarti Industries Limited',
-        'ABCAPITAL': 'Aditya Birla Capital Limited',
-        'ABFRL': 'Aditya Birla Fashion and Retail Limited',
-        'AJANTPHARM': 'Ajanta Pharma Limited',
-        'ALKEM': 'Alkem Laboratories Limited',
-        'AMARAJABAT': 'Amara Raja Batteries Limited',
-        'APLAPOLLO': 'APL Apollo Tubes Limited',
-        'ASTRAL': 'Astral Limited',
-        'ATUL': 'Atul Limited',
-        'BALKRISIND': 'Balkrishna Industries Limited',
-        'BATAINDIA': 'Bata India Limited',
-        'BEL': 'Bharat Electronics Limited',
-        'BHARATFORG': 'Bharat Forge Limited',
-        'BHEL': 'Bharat Heavy Electricals Limited',
-        'BLUEDART': 'Blue Dart Express Limited',
-        'CANBK': 'Canara Bank',
-        'CANFINHOME': 'Can Fin Homes Limited',
-        'CASTROLIND': 'Castrol India Limited',
-        'CEATLTD': 'CEAT Limited',
-        'CHAMBLFERT': 'Chambal Fertilisers and Chemicals Limited',
-        'CRISIL': 'CRISIL Limited',
-        'CROMPTON': 'Crompton Greaves Consumer Electricals Limited',
-        'CUB': 'City Union Bank Limited',
-        'CUMMINSIND': 'Cummins India Limited',
-        'DEEPAKNTR': 'Deepak Nitrite Limited',
-        'DIXON': 'Dixon Technologies (India) Limited',
-        'ESCORTS': 'Escorts Limited',
-        'EXIDEIND': 'Exide Industries Limited',
-        'FINEORG': 'Fine Organic Industries Limited',
-        'GICRE': 'General Insurance Corporation of India',
-        'GILLETTE': 'Gillette India Limited',
-        'GLAXO': 'GlaxoSmithKline Pharmaceuticals Limited',
-        'GNFC': 'Gujarat Narmada Valley Fertilizers and Chemicals Limited',
-        'GRANULES': 'Granules India Limited',
-        'GSPL': 'Gujarat State Petronet Limited',
-        'GUJGASLTD': 'Gujarat Gas Limited',
-        'HAL': 'Hindustan Aeronautics Limited',
-        'HONAUT': 'Honeywell Automation India Limited',
-        'IBREALEST': 'Indiabulls Real Estate Limited',
-        'IDEA': 'Vodafone Idea Limited',
-        'IDFC': 'IDFC Limited',
-        'INDHOTEL': 'The Indian Hotels Company Limited',
-        'INDIGO': 'InterGlobe Aviation Limited',
-        'INDUSTOWER': 'Indus Towers Limited',
-        'INTELLECT': 'Intellect Design Arena Limited',
-        'IOB': 'Indian Overseas Bank',
-        'IRFC': 'Indian Railway Finance Corporation Limited',
-        'ISEC': 'ICICI Securities Limited',
-        'JKCEMENT': 'JK Cement Limited',
-        'JKLAKSHMI': 'JK Lakshmi Cement Limited',
-        'JMFINANCIL': 'JM Financial Limited',
-        'JUBLFOOD': 'Jubilant FoodWorks Limited',
-        'KALYANKJIL': 'Kalyan Jewellers India Limited',
-        'KEI': 'KEI Industries Limited',
-        'L&TFH': 'L&T Finance Holdings Limited',
-        'LALPATHLAB': 'Dr. Lal PathLabs Limited',
-        'LAURUSLABS': 'Laurus Labs Limited',
-        'LICHSGFIN': 'LIC Housing Finance Limited',
-        'LTTS': 'L&T Technology Services Limited',
-        'MANAPPURAM': 'Manappuram Finance Limited',
-        'MAZDOCK': 'Mazagon Dock Shipbuilders Limited',
-        'MINDTREE': 'Mindtree Limited',
-        'MOTHERSUMI': 'Motherson Sumi Systems Limited',
-        'MUTHOOTFIN': 'Muthoot Finance Limited',
-        'NATIONALUM': 'National Aluminium Company Limited',
-        'NBCC': 'NBCC (India) Limited',
-        'NEWGEN': 'Newgen Software Technologies Limited',
-        'NIITLTD': 'NIIT Limited',
-        'NOCIL': 'NOCIL Limited',
-        'NYKAA': 'FSN E-Commerce Ventures Limited',
-        'ORIENTELEC': 'Orient Electric Limited',
-        'PAYTM': 'One 97 Communications Limited',
-        'PFC': 'Power Finance Corporation Limited',
-        'PFIZER': 'Pfizer Limited',
-        'PHOENIXLTD': 'The Phoenix Mills Limited',
-        'PIRAMALENT': 'Piramal Enterprises Limited',
-        'PNBHOUSING': 'PNB Housing Finance Limited',
-        'POLICYBZR': 'PB Fintech Limited',
-        'POLYMED': 'Poly Medicure Limited',
-        'PRESTIGE': 'Prestige Estates Projects Limited',
-        'RADICO': 'Radico Khaitan Limited',
-        'RAILTEL': 'RailTel Corporation of India Limited',
-        'RATNAMANI': 'Ratnamani Metals & Tubes Limited',
-        'RAYMOND': 'Raymond Limited',
-        'RELAXO': 'Relaxo Footwears Limited',
-        'RPOWER': 'Reliance Power Limited',
-        'SCHAEFFLER': 'Schaeffler India Limited',
-        'SHYAMMETL': 'Shyam Metalics and Energy Limited',
-        'SJVN': 'SJVN Limited',
-        'SOBHA': 'Sobha Limited',
-        'STAR': 'Strides Pharma Science Limited',
-        'SUNTV': 'Sun TV Network Limited',
-        'SUNDARMFIN': 'Sundaram Finance Limited',
-        'SUNDRMFAST': 'Sundram Fasteners Limited',
-        'SUZLON': 'Suzlon Energy Limited',
-        'SYNGENE': 'Syngene International Limited',
-        'TATACHEM': 'Tata Chemicals Limited',
-        'TATACOMM': 'Tata Communications Limited',
-        'TATAELXSI': 'Tata Elxsi Limited',
-        'TATAINVEST': 'Tata Investment Corporation Limited',
-        'TATAPOWER': 'Tata Power Company Limited',
-        'TEAMLEASE': 'TeamLease Services Limited',
-        'THERMAX': 'Thermax Limited',
-        'THYROCARE': 'Thyrocare Technologies Limited',
-        'TIINDIA': 'Tube Investments of India Limited',
-        'TIMKEN': 'Timken India Limited',
-        'TRIDENT': 'Trident Limited',
-        'TTKPRESTIG': 'TTK Prestige Limited',
-        'UJJIVAN': 'Ujjivan Financial Services Limited',
-        'UNOMINDA': 'Uno Minda Limited',
-        'VARROC': 'Varroc Engineering Limited',
-        'VBL': 'Varun Beverages Limited',
-        'VINATIORGA': 'Vinati Organics Limited',
-        'VIPIND': 'VIP Industries Limited',
-        'WESTLIFE': 'Westlife Development Limited',
-        'YESBANK': 'Yes Bank Limited',
-        'ZENSARTECH': 'Zensar Technologies Limited',
-        'ZYDUSLIFE': 'Zydus Lifesciences Limited',
-        
-        # Additional Banking & Financial Services
-        'BANKBARODA': 'Bank of Baroda',
-        'UNIONBANK': 'Union Bank of India',
-        'INDIANB': 'Indian Bank',
-        'CENTRALBK': 'Central Bank of India',
-        'BANKOFIND': 'Bank of India',
-        'JKBANK': 'Jammu & Kashmir Bank Limited',
-        'KARB': 'Karnataka Bank Limited',
-        'SOUTHBANK': 'South Indian Bank Limited',
-        'TMVBANK': 'TMB Bank Limited',
-        
-        # Technology & IT Services
-        'CYIENT': 'Cyient Limited',
-        'COFORGE': 'Coforge Limited',
-        'FSL': 'Firstsource Solutions Limited',
-        'HEXAWARE': 'Hexaware Technologies Limited',
-        'KPITTECH': 'KPIT Technologies Limited',
-        'SONATSOFTW': 'Sonata Software Limited',
-        'ZENSAR': 'Zensar Technologies Limited',
-        
-        # Pharmaceuticals & Healthcare
-        'GLENMARK': 'Glenmark Pharmaceuticals Limited',
-        'JBCHEPHARM': 'JB Chemicals & Pharmaceuticals Limited',
-        'LAURUS': 'Laurus Labs Limited',
-        'NATCOPHARM': 'Natco Pharma Limited',
-        'REDINGTON': 'Redington (India) Limited',
-        'WOCKPHARMA': 'Wockhardt Limited',
     }
+
+
+def get_real_time_stock_data(symbol, symbol_type='stock'):
+    """
+    Get real-time stock/index data using multiple fallback methods
+    """
+    try:
+        # Determine the correct symbol format
+        if symbol_type == 'index':
+            # Index symbols are already in correct format
+            yf_symbol = symbol
+        else:
+            # Stock symbols need .NS suffix
+            if not symbol.endswith('.NS') and not symbol.endswith('.BO'):
+                yf_symbol = f"{symbol}.NS"
+            else:
+                yf_symbol = symbol
+        
+        # Method 1: Try yfinance
+        ticker = yf.Ticker(yf_symbol)
+        
+        # Get basic info first
+        try:
+            info = ticker.info
+            if not info or 'regularMarketPrice' not in info:
+                # Try getting history if info is incomplete
+                hist = ticker.history(period="2d", interval="1d")
+                if hist.empty:
+                    raise Exception("No history data available")
+        except:
+            # Fallback to history only
+            hist = ticker.history(period="2d", interval="1d")
+            if hist.empty:
+                raise Exception("No data available from yfinance")
+            info = {}
+        
+        # Get current data
+        if 'regularMarketPrice' in info and info['regularMarketPrice']:
+            # Use info data if available
+            current_price = float(info['regularMarketPrice'])
+            prev_close = float(info.get('previousClose', current_price))
+            volume = int(info.get('volume', 0))
+            market_cap = info.get('marketCap', 0)
+            company_name = info.get('longName') or info.get('shortName', symbol)
+        else:
+            # Use history data
+            hist = ticker.history(period="2d", interval="1d")
+            if hist.empty:
+                raise Exception("No recent data available")
+            
+            current_price = float(hist['Close'].iloc[-1])
+            if len(hist) > 1:
+                prev_close = float(hist['Close'].iloc[-2])
+            else:
+                prev_close = float(hist['Open'].iloc[-1])
+            
+            volume = int(hist['Volume'].iloc[-1]) if 'Volume' in hist.columns else 0
+            market_cap = 0
+            company_name = symbol
+        
+        # Calculate change
+        change_amount = current_price - prev_close
+        change_percent = (change_amount / prev_close * 100) if prev_close != 0 else 0
+        
+        result = {
+            'symbol': symbol.replace('.NS', '').replace('.BO', ''),
+            'company_name': company_name,
+            'last_price': round(current_price, 2),
+            'change': round(change_percent, 2),
+            'change_amount': round(change_amount, 2),
+            'volume': volume,
+            'market_cap': market_cap,
+            'success': True,
+            'data_source': 'yfinance',
+            'type': symbol_type
+        }
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Real-time data fetch failed for {symbol}: {str(e)}")
+        
+        # Method 2: Try database fallback for stocks
+        if symbol_type == 'stock':
+            try:
+                clean_symbol = symbol.replace('.NS', '').replace('.BO', '')
+                stock_data = StockData.objects.filter(symbol=clean_symbol).first()
+                
+                if stock_data:
+                    return {
+                        'symbol': clean_symbol,
+                        'company_name': stock_data.company_name,
+                        'last_price': float(stock_data.last_price),
+                        'change': float(stock_data.pchange),
+                        'change_amount': float(stock_data.change),
+                        'volume': stock_data.volume,
+                        'market_cap': stock_data.market_cap or 0,
+                        'success': True,
+                        'data_source': 'database_cache',
+                        'type': 'stock',
+                        'note': 'Using cached data'
+                    }
+            except Exception as db_e:
+                logger.error(f"Database fallback failed for {symbol}: {str(db_e)}")
+        
+        # Method 3: Return error response
+        return {
+            'symbol': symbol.replace('.NS', '').replace('.BO', ''),
+            'success': False,
+            'error': f'Unable to fetch data: {str(e)}',
+            'type': symbol_type
+        }
 
 
 @login_required
 def search_stocks(request):
-    """Enhanced API endpoint for comprehensive NSE stock search including NIFTY 500 and all indices"""
+    """Enhanced API endpoint for comprehensive NSE stock search with real-time data"""
     try:
         query = request.GET.get('q', '').strip().upper()
         
         if len(query) < 1:
             return JsonResponse({'stocks': []})
         
-        # Check cache first (3-minute cache for better performance)
-        cache_key = f'stock_search_v3_{query}'
+        # Check cache first (2-minute cache for real-time data)
+        cache_key = f'stock_search_realtime_{query}'
         cached_result = cache.get(cache_key)
         if cached_result:
-            return JsonResponse({'stocks': cached_result})
+            logger.info(f"Serving cached result for query: {query}")
+            return JsonResponse({
+                'stocks': cached_result,
+                'cached': True,
+                'query': query
+            })
         
         stocks = []
         nifty_500_stocks = get_nifty_500_stocks()
@@ -726,37 +693,31 @@ def search_stocks(request):
         
         # Priority 1: Check for exact index matches
         index_matches = []
-        for index_name, symbol in nse_indices.items():
-            if query == index_name or query in index_name.split():
+        for index_name, yf_symbol in nse_indices.items():
+            if query == index_name or (len(query) >= 3 and query in index_name):
                 try:
-                    ticker = yf.Ticker(symbol)
-                    info = ticker.info
-                    current_data = ticker.history(period="1d")
+                    real_time_data = get_real_time_stock_data(yf_symbol, 'index')
                     
-                    if not current_data.empty:
-                        last_price = current_data['Close'].iloc[-1]
-                        prev_close = info.get('previousClose', last_price)
-                        
-                        if prev_close and prev_close > 0:
-                            change_amount = last_price - prev_close
-                            change_percent = (change_amount / prev_close) * 100
-                        else:
-                            change_amount = 0
-                            change_percent = 0
-                        
+                    if real_time_data.get('success'):
                         index_matches.append({
                             'symbol': index_name,
                             'company_name': f'{index_name} Index',
-                            'last_price': round(float(last_price), 2),
-                            'change': round(float(change_percent), 2),
-                            'change_amount': round(float(change_amount), 2),
-                            'volume': info.get('volume', 0),
+                            'last_price': real_time_data['last_price'],
+                            'change': real_time_data['change'],
+                            'change_amount': real_time_data['change_amount'],
+                            'volume': real_time_data.get('volume', 0),
                             'market_cap': 0,  # Not applicable for indices
                             'type': 'index',
-                            'priority': 1
+                            'priority': 1,
+                            'data_source': real_time_data.get('data_source', 'unknown')
                         })
-                except Exception:
+                except Exception as e:
+                    logger.warning(f"Failed to get real-time data for index {index_name}: {str(e)}")
                     continue
+                
+                # Limit index results to prevent timeout
+                if len(index_matches) >= 3:
+                    break
         
         # Priority 2: Search in NIFTY 500 stocks
         stock_matches = []
@@ -769,74 +730,55 @@ def search_stocks(request):
         for symbol, company_name in nifty_500_stocks.items():
             if query != symbol and query in symbol:
                 stock_matches.append((symbol, company_name, 2))
-                if len(stock_matches) >= 20:
+                if len(stock_matches) >= 15:
                     break
         
         # Company name matches
-        if len(stock_matches) < 20:
+        if len(stock_matches) < 15:
             for symbol, company_name in nifty_500_stocks.items():
-                if query in company_name.upper() and (symbol, company_name, 2) not in [(s[0], s[1], s[2]) for s in stock_matches]:
+                if query in company_name.upper() and not any(s[0] == symbol for s in stock_matches):
                     stock_matches.append((symbol, company_name, 3))
-                    if len(stock_matches) >= 20:
+                    if len(stock_matches) >= 15:
                         break
         
-        # Fetch real-time data for stocks (limit to 12 to prevent timeout)
+        # Fetch real-time data for stocks (limit to 10 to prevent timeout)
         stock_results = []
-        for symbol, company_name, priority in stock_matches[:12]:
+        for symbol, company_name, priority in stock_matches[:10]:
             try:
-                ticker = yf.Ticker(f"{symbol}.NS")
-                info = ticker.info
-                current_data = ticker.history(period="1d")
+                real_time_data = get_real_time_stock_data(symbol, 'stock')
                 
-                if not current_data.empty:
-                    last_price = current_data['Close'].iloc[-1]
-                    prev_close = info.get('previousClose')
-                    
-                    # Better handling of previous close
-                    if not prev_close or prev_close == 0:
-                        if len(current_data) > 1:
-                            prev_close = current_data['Close'].iloc[-2]
-                        else:
-                            prev_close = current_data['Open'].iloc[-1]
-                    
-                    if prev_close and prev_close > 0:
-                        change_amount = last_price - prev_close
-                        change_percent = (change_amount / prev_close) * 100
-                    else:
-                        change_amount = 0
-                        change_percent = 0
-                    
-                    volume = info.get('volume', 0)
-                    if not volume and not current_data['Volume'].empty:
-                        volume = current_data['Volume'].iloc[-1]
-                    
+                if real_time_data.get('success'):
                     stock_results.append({
                         'symbol': symbol,
                         'company_name': company_name,
-                        'last_price': round(float(last_price), 2),
-                        'change': round(float(change_percent), 2),
-                        'change_amount': round(float(change_amount), 2),
-                        'volume': int(volume) if volume else 0,
-                        'market_cap': info.get('marketCap', 0),
+                        'last_price': real_time_data['last_price'],
+                        'change': real_time_data['change'],
+                        'change_amount': real_time_data['change_amount'],
+                        'volume': real_time_data.get('volume', 0),
+                        'market_cap': real_time_data.get('market_cap', 0),
                         'type': 'stock',
-                        'priority': priority
+                        'priority': priority,
+                        'data_source': real_time_data.get('data_source', 'unknown'),
+                        'note': real_time_data.get('note', '')
+                    })
+                else:
+                    # Include stock with error info
+                    stock_results.append({
+                        'symbol': symbol,
+                        'company_name': company_name,
+                        'last_price': 0.00,
+                        'change': 0.00,
+                        'change_amount': 0.00,
+                        'volume': 0,
+                        'market_cap': 0,
+                        'type': 'stock',
+                        'priority': priority,
+                        'error': real_time_data.get('error', 'Data unavailable'),
+                        'data_source': 'error'
                     })
                     
             except Exception as e:
-                logger.warning(f"Failed to get data for {symbol}: {str(e)}")
-                # Still include the stock with basic info
-                stock_results.append({
-                    'symbol': symbol,
-                    'company_name': company_name,
-                    'last_price': 0.00,
-                    'change': 0.00,
-                    'change_amount': 0.00,
-                    'volume': 0,
-                    'market_cap': 0,
-                    'type': 'stock',
-                    'priority': priority,
-                    'note': 'Price data temporarily unavailable'
-                })
+                logger.error(f"Error processing stock {symbol}: {str(e)}")
                 continue
         
         # Combine and sort results
@@ -855,82 +797,213 @@ def search_stocks(request):
         
         all_results.sort(key=sort_key)
         
-        # Limit results and add fallback if needed
-        stocks = all_results[:15]
+        # Limit results
+        stocks = all_results[:12]
         
         # If no results found, try direct yfinance search
         if not stocks:
+            logger.info(f"No matches found, trying direct search for: {query}")
             direct_patterns = [f"{query}.NS", f"{query}.BO", query]
             for pattern in direct_patterns:
                 try:
-                    ticker = yf.Ticker(pattern)
-                    info = ticker.info
-                    current_data = ticker.history(period="1d")
+                    real_time_data = get_real_time_stock_data(pattern, 'stock')
                     
-                    if not current_data.empty and info:
-                        last_price = current_data['Close'].iloc[-1]
-                        prev_close = info.get('previousClose', last_price)
-                        
-                        if prev_close and prev_close > 0:
-                            change_amount = last_price - prev_close
-                            change_percent = (change_amount / prev_close) * 100
-                        else:
-                            change_amount = 0
-                            change_percent = 0
-                        
+                    if real_time_data.get('success'):
                         stocks.append({
                             'symbol': query,
-                            'company_name': info.get('longName') or info.get('shortName', query),
-                            'last_price': round(float(last_price), 2),
-                            'change': round(float(change_percent), 2),
-                            'change_amount': round(float(change_amount), 2),
-                            'volume': info.get('volume', 0),
-                            'market_cap': info.get('marketCap', 0),
+                            'company_name': real_time_data.get('company_name', query),
+                            'last_price': real_time_data['last_price'],
+                            'change': real_time_data['change'],
+                            'change_amount': real_time_data['change_amount'],
+                            'volume': real_time_data.get('volume', 0),
+                            'market_cap': real_time_data.get('market_cap', 0),
                             'type': 'stock',
-                            'note': 'Direct search result'
+                            'note': 'Direct search result',
+                            'data_source': real_time_data.get('data_source', 'direct')
                         })
                         break
-                except Exception:
+                except Exception as e:
+                    logger.error(f"Direct search failed for {pattern}: {str(e)}")
                     continue
         
-        # Cache results for 3 minutes
+        # Cache results for 2 minutes (real-time data)
         if stocks:
-            cache.set(cache_key, stocks, 180)
+            cache.set(cache_key, stocks, 120)  # 2 minutes cache
+            logger.info(f"Cached {len(stocks)} results for query: {query}")
         
         return JsonResponse({
             'stocks': stocks,
             'total_found': len(stocks),
             'query': query,
-            'data_source': 'NIFTY 500 + NSE Indices',
+            'data_source': 'Real-time + NIFTY 500 + NSE Indices',
             'indices_available': len(nse_indices),
-            'stocks_database_size': len(nifty_500_stocks)
+            'stocks_database_size': len(nifty_500_stocks),
+            'cache_duration': '2 minutes',
+            'timestamp': timezone.now().isoformat()
         })
         
     except Exception as e:
-        logger.error(f"Enhanced stock search error: {str(e)}")
+        logger.error(f"Enhanced stock search error for query '{query}': {str(e)}")
         
-        # Comprehensive fallback data
+        # Comprehensive fallback data with realistic prices
         fallback_stocks = [
-            {'symbol': 'NIFTY', 'company_name': 'NIFTY 50 Index', 'last_price': 24500.00, 'change': 0.75, 'type': 'index'},
-            {'symbol': 'BANKNIFTY', 'company_name': 'Bank NIFTY Index', 'last_price': 52000.00, 'change': -0.45, 'type': 'index'},
-            {'symbol': 'SENSEX', 'company_name': 'BSE SENSEX', 'last_price': 80500.00, 'change': 0.25, 'type': 'index'},
-            {'symbol': 'RELIANCE', 'company_name': 'Reliance Industries Limited', 'last_price': 2450.00, 'change': -0.85, 'type': 'stock'},
-            {'symbol': 'TCS', 'company_name': 'Tata Consultancy Services Limited', 'last_price': 3850.00, 'change': 1.25, 'type': 'stock'},
-            {'symbol': 'HDFCBANK', 'company_name': 'HDFC Bank Limited', 'last_price': 1620.00, 'change': 0.45, 'type': 'stock'},
-            {'symbol': 'INFY', 'company_name': 'Infosys Limited', 'last_price': 1425.00, 'change': 2.10, 'type': 'stock'},
-            {'symbol': 'ICICIBANK', 'company_name': 'ICICI Bank Limited', 'last_price': 950.00, 'change': -1.20, 'type': 'stock'},
-            {'symbol': 'ADANIENT', 'company_name': 'Adani Enterprises Limited', 'last_price': 3200.00, 'change': 3.45, 'type': 'stock'},
-            {'symbol': 'BHARTIARTL', 'company_name': 'Bharti Airtel Limited', 'last_price': 1050.00, 'change': 1.80, 'type': 'stock'},
+            {
+                'symbol': 'NIFTY',
+                'company_name': 'NIFTY 50 Index',
+                'last_price': 24500.00,
+                'change': 0.75,
+                'change_amount': 183.50,
+                'volume': 0,
+                'market_cap': 0,
+                'type': 'index',
+                'data_source': 'fallback'
+            },
+            {
+                'symbol': 'BANKNIFTY',
+                'company_name': 'Bank NIFTY Index',
+                'last_price': 52000.00,
+                'change': -0.45,
+                'change_amount': -234.00,
+                'volume': 0,
+                'market_cap': 0,
+                'type': 'index',
+                'data_source': 'fallback'
+            },
+            {
+                'symbol': 'SENSEX',
+                'company_name': 'BSE SENSEX',
+                'last_price': 80500.00,
+                'change': 0.25,
+                'change_amount': 201.25,
+                'volume': 0,
+                'market_cap': 0,
+                'type': 'index',
+                'data_source': 'fallback'
+            },
+            {
+                'symbol': 'RELIANCE',
+                'company_name': 'Reliance Industries Limited',
+                'last_price': 2450.00,
+                'change': -0.85,
+                'change_amount': -21.00,
+                'volume': 15234567,
+                'market_cap': 16500000000000,
+                'type': 'stock',
+                'data_source': 'fallback'
+            },
+            {
+                'symbol': 'TCS',
+                'company_name': 'Tata Consultancy Services Limited',
+                'last_price': 3850.00,
+                'change': 1.25,
+                'change_amount': 47.50,
+                'volume': 5432109,
+                'market_cap': 14000000000000,
+                'type': 'stock',
+                'data_source': 'fallback'
+            },
+            {
+                'symbol': 'HDFCBANK',
+                'company_name': 'HDFC Bank Limited',
+                'last_price': 1620.00,
+                'change': 0.45,
+                'change_amount': 7.25,
+                'volume': 12345678,
+                'market_cap': 12000000000000,
+                'type': 'stock',
+                'data_source': 'fallback'
+            },
+            {
+                'symbol': 'INFY',
+                'company_name': 'Infosys Limited',
+                'last_price': 1425.00,
+                'change': 2.10,
+                'change_amount': 29.50,
+                'volume': 8765432,
+                'market_cap': 6000000000000,
+                'type': 'stock',
+                'data_source': 'fallback'
+            },
+            {
+                'symbol': 'ICICIBANK',
+                'company_name': 'ICICI Bank Limited',
+                'last_price': 950.00,
+                'change': -1.20,
+                'change_amount': -11.50,
+                'volume': 9876543,
+                'market_cap': 6500000000000,
+                'type': 'stock',
+                'data_source': 'fallback'
+            },
         ]
         
-        filtered = [s for s in fallback_stocks if query in s['symbol'] or query in s['company_name'].upper()]
+        # Filter fallback results based on query
+        filtered = [
+            s for s in fallback_stocks
+            if query in s['symbol'] or query in s['company_name'].upper()
+        ]
+        
         return JsonResponse({
             'stocks': filtered,
             'total_found': len(filtered),
             'query': query,
             'error': 'Using fallback data due to API issues',
-            'note': 'Real-time data temporarily unavailable'
+            'note': 'Real-time data temporarily unavailable',
+            'data_source': 'fallback',
+            'timestamp': timezone.now().isoformat()
         })
+
+
+def update_stock_database():
+    """
+    Background task to update stock database periodically
+    Call this from a Django management command or celery task
+    """
+    stock_list = get_nifty_500_stocks()
+    updated_count = 0
+    failed_count = 0
+    
+    logger.info(f"Starting database update for {len(stock_list)} stocks")
+    
+    for symbol, company_name in list(stock_list.items())[:50]:  # Limit to prevent timeout
+        try:
+            real_time_data = get_real_time_stock_data(symbol, 'stock')
+            
+            if real_time_data.get('success'):
+                stock_obj, created = StockData.objects.update_or_create(
+                    symbol=symbol,
+                    defaults={
+                        'company_name': company_name,
+                        'last_price': real_time_data['last_price'],
+                        'change': real_time_data['change_amount'],
+                        'pchange': real_time_data['change'],
+                        'volume': real_time_data.get('volume', 0),
+                        'market_cap': real_time_data.get('market_cap'),
+                        'is_active': True,
+                    }
+                )
+                updated_count += 1
+                
+                if created:
+                    logger.info(f"Created new stock entry: {symbol}")
+                else:
+                    logger.debug(f"Updated stock: {symbol}")
+                    
+            else:
+                failed_count += 1
+                logger.warning(f"Failed to get data for {symbol}: {real_time_data.get('error', 'Unknown error')}")
+                
+        except Exception as e:
+            failed_count += 1
+            logger.error(f"Exception updating {symbol}: {str(e)}")
+            continue
+    
+    logger.info(f"Database update completed. Updated: {updated_count}, Failed: {failed_count}")
+    return {
+        'updated': updated_count,
+        'failed': failed_count,
+        'total_attempted': updated_count + failed_count
+    }
 
 
 # ============ Payment Views (Razorpay) ============

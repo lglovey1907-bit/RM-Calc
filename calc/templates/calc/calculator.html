@@ -1510,6 +1510,422 @@
     {% csrf_token %}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
     <script>
+    // Updated JavaScript for stock search with real-time data
+// Add this to your template or static JavaScript file
+
+class StockSearch {
+    constructor(searchInputId, resultsContainerId) {
+        this.searchInput = document.getElementById(searchInputId);
+        this.resultsContainer = document.getElementById(resultsContainerId);
+        this.searchTimeout = null;
+        this.cache = new Map();
+        this.cacheExpiry = 30000; // 30 seconds
+        
+        this.init();
+    }
+    
+    init() {
+        if (!this.searchInput || !this.resultsContainer) {
+            console.error('Stock search elements not found');
+            return;
+        }
+        
+        this.searchInput.addEventListener('input', (e) => {
+            this.handleSearch(e.target.value);
+        });
+        
+        // Clear results when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!this.searchInput.contains(e.target) &&
+                !this.resultsContainer.contains(e.target)) {
+                this.hideResults();
+            }
+        });
+    }
+    
+    handleSearch(query) {
+        clearTimeout(this.searchTimeout);
+        
+        if (!query || query.length < 2) {
+            this.hideResults();
+            return;
+        }
+        
+        // Check cache first
+        const cacheKey = query.toLowerCase();
+        const cached = this.cache.get(cacheKey);
+        
+        if (cached && (Date.now() - cached.timestamp) < this.cacheExpiry) {
+            this.displayResults(cached.data, query);
+            return;
+        }
+        
+        // Show loading state
+        this.showLoading();
+        
+        // Debounce search
+        this.searchTimeout = setTimeout(() => {
+            this.performSearch(query);
+        }, 300);
+    }
+    
+    async performSearch(query) {
+        try {
+            const response = await fetch(`/api/stocks/search/?q=${encodeURIComponent(query)}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            
+            // Cache the results
+            this.cache.set(query.toLowerCase(), {
+                data: data,
+                timestamp: Date.now()
+            });
+            
+            this.displayResults(data, query);
+            
+        } catch (error) {
+            console.error('Stock search error:', error);
+            this.showError('Failed to fetch stock data. Please try again.');
+        }
+    }
+    
+    displayResults(data, query) {
+        if (!data.results || data.results.length === 0) {
+            this.showNoResults(query);
+            return;
+        }
+        
+        const html = data.results.map(stock => this.createStockItem(stock)).join('');
+        
+        this.resultsContainer.innerHTML = `
+            <div class="stock-search-results">
+                <div class="results-header">
+                    <span class="results-count">${data.results.length} results for "${query}"</span>
+                    ${data.results.some(s => s.cached) ? '<span class="cache-notice">Some data may be cached</span>' : ''}
+                </div>
+                <div class="results-list">
+                    ${html}
+                </div>
+            </div>
+        `;
+        
+        this.showResults();
+        this.attachResultHandlers();
+    }
+    
+    createStockItem(stock) {
+        const changeClass = stock.change >= 0 ? 'positive' : 'negative';
+        const changeSymbol = stock.change >= 0 ? '+' : '';
+        const priceFormatted = stock.price ? stock.price.toFixed(2) : 'N/A';
+        const changeFormatted = stock.change ? stock.change.toFixed(2) : '0.00';
+        const pchangeFormatted = stock.pchange ? stock.pchange.toFixed(2) : '0.00';
+        
+        return `
+            <div class="stock-item" data-symbol="${stock.symbol}" data-price="${stock.price}">
+                <div class="stock-main">
+                    <div class="stock-info">
+                        <div class="stock-symbol">${stock.symbol}</div>
+                        <div class="stock-name">${stock.name}</div>
+                    </div>
+                    <div class="stock-price">
+                        <div class="price">₹${priceFormatted}</div>
+                        <div class="change ${changeClass}">
+                            ${changeSymbol}${changeFormatted} (${changeSymbol}${pchangeFormatted}%)
+                        </div>
+                    </div>
+                </div>
+                ${stock.volume ? `<div class="stock-meta">Volume: ${this.formatVolume(stock.volume)}</div>` : ''}
+                ${stock.cached ? '<div class="cached-badge">Cached Data</div>' : ''}
+                ${stock.error ? `<div class="error-badge">${stock.error}</div>` : ''}
+            </div>
+        `;
+    }
+    
+    formatVolume(volume) {
+        if (volume >= 10000000) {
+            return (volume / 10000000).toFixed(1) + 'Cr';
+        } else if (volume >= 100000) {
+            return (volume / 100000).toFixed(1) + 'L';
+        } else if (volume >= 1000) {
+            return (volume / 1000).toFixed(1) + 'K';
+        }
+        return volume.toString();
+    }
+    
+    attachResultHandlers() {
+        const stockItems = this.resultsContainer.querySelectorAll('.stock-item');
+        
+        stockItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const symbol = item.dataset.symbol;
+                const price = parseFloat(item.dataset.price);
+                
+                this.onStockSelect(symbol, price);
+                this.hideResults();
+            });
+        });
+    }
+    
+    onStockSelect(symbol, price) {
+        // Override this method to handle stock selection
+        console.log('Stock selected:', { symbol, price });
+        
+        // Example: Fill form fields
+        const symbolInput = document.getElementById('stock_symbol');
+        const priceInput = document.getElementById('stock_price');
+        
+        if (symbolInput) symbolInput.value = symbol;
+        if (priceInput) priceInput.value = price;
+        
+        // Trigger any additional events
+        this.searchInput.value = symbol;
+        
+        // Dispatch custom event
+        window.dispatchEvent(new CustomEvent('stockSelected', {
+            detail: { symbol, price }
+        }));
+    }
+    
+    showLoading() {
+        this.resultsContainer.innerHTML = `
+            <div class="search-loading">
+                <div class="loading-spinner"></div>
+                <span>Searching for stocks...</span>
+            </div>
+        `;
+        this.showResults();
+    }
+    
+    showError(message) {
+        this.resultsContainer.innerHTML = `
+            <div class="search-error">
+                <span class="error-icon">⚠️</span>
+                <span>${message}</span>
+            </div>
+        `;
+        this.showResults();
+    }
+    
+    showNoResults(query) {
+        this.resultsContainer.innerHTML = `
+            <div class="no-results">
+                <span>No stocks found for "${query}"</span>
+                <small>Try searching with stock symbol or company name</small>
+            </div>
+        `;
+        this.showResults();
+    }
+    
+    showResults() {
+        this.resultsContainer.style.display = 'block';
+        this.resultsContainer.classList.add('active');
+    }
+    
+    hideResults() {
+        this.resultsContainer.style.display = 'none';
+        this.resultsContainer.classList.remove('active');
+    }
+    
+    // Method to manually refresh data
+    async refreshStock(symbol) {
+        const cacheKey = symbol.toLowerCase();
+        this.cache.delete(cacheKey);
+        
+        try {
+            const response = await fetch(`/api/stocks/search/?q=${encodeURIComponent(symbol)}`);
+            const data = await response.json();
+            
+            if (data.results && data.results.length > 0) {
+                return data.results[0];
+            }
+        } catch (error) {
+            console.error('Failed to refresh stock data:', error);
+        }
+        
+        return null;
+    }
+    
+    // Clear cache
+    clearCache() {
+        this.cache.clear();
+    }
+}
+
+// CSS for the stock search (add to your stylesheet)
+const stockSearchCSS = `
+.stock-search-results {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    max-height: 400px;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.results-header {
+    padding: 10px 15px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.results-count {
+    font-size: 14px;
+    color: #666;
+}
+
+.cache-notice {
+    font-size: 12px;
+    color: #007bff;
+    font-style: italic;
+}
+
+.results-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.stock-item {
+    padding: 12px 15px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    position: relative;
+}
+
+.stock-item:hover {
+    background-color: #f8f9fa;
+}
+
+.stock-item:last-child {
+    border-bottom: none;
+}
+
+.stock-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.stock-symbol {
+    font-weight: 600;
+    font-size: 16px;
+    color: #333;
+}
+
+.stock-name {
+    font-size: 14px;
+    color: #666;
+    margin-top: 2px;
+}
+
+.stock-price {
+    text-align: right;
+}
+
+.price {
+    font-weight: 600;
+    font-size: 16px;
+    color: #333;
+}
+
+.change {
+    font-size: 14px;
+    margin-top: 2px;
+}
+
+.change.positive {
+    color: #28a745;
+}
+
+.change.negative {
+    color: #dc3545;
+}
+
+.stock-meta {
+    font-size: 12px;
+    color: #999;
+    margin-top: 8px;
+}
+
+.cached-badge, .error-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 10px;
+}
+
+.cached-badge {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.error-badge {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.search-loading, .search-error, .no-results {
+    padding: 20px;
+    text-align: center;
+    color: #666;
+}
+
+.loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 10px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+`;
+
+// Initialize stock search when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize stock search
+    window.stockSearch = new StockSearch('stock-search-input', 'stock-search-results');
+    
+    // Add CSS to page
+    const style = document.createElement('style');
+    style.textContent = stockSearchCSS;
+    document.head.appendChild(style);
+    
+    // Listen for stock selection events
+    window.addEventListener('stockSelected', function(event) {
+        const { symbol, price } = event.detail;
+        console.log('Stock selected event:', symbol, price);
+        
+        // Add your custom logic here
+        // For example, update calculator fields, trigger calculations, etc.
+    });
+});
+
+// Export for use in other scripts
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = StockSearch;
+}
         // Global Variables
         let currentCapital = parseFloat('{{ user_capital|default:"200000" }}');
         let currentRisk = parseFloat('{{ user_risk_percent|default:"1" }}');
