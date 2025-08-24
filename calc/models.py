@@ -47,7 +47,7 @@ class CalculationHistory(models.Model):
     ]
     
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='calculations')
-    symbol = models.CharField(max_length=20)
+    symbol = models.CharField(max_length=40)
     entry_price = models.DecimalField(max_digits=12, decimal_places=4)
     stop_loss = models.DecimalField(max_digits=12, decimal_places=4)
     quantity = models.IntegerField()
