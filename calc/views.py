@@ -20,7 +20,7 @@ import yfinance as yf
 from django.core.cache import cache
 import requests
 from datetime import datetime, timedelta
-
+from .stock_utils import stock_fetcher
 from .models import (
     UserSettings,
     CalculationHistory,
@@ -556,166 +556,15 @@ def get_nifty_500_stocks():
 
 
 
+# Replace this function in calc/views.py
+
+from .stock_utils import stock_fetcher
+
 def get_real_time_stock_data(symbol, symbol_type='stock'):
     """
-    Enhanced real-time stock/index data fetching with better error handling
+    Enhanced real-time stock/index data fetching with rate limiting
     """
-    try:
-        # Determine the correct symbol format
-        if symbol_type == 'index':
-            yf_symbol = symbol
-        else:
-            # Ensure proper NSE format
-            if not symbol.endswith('.NS') and not symbol.endswith('.BO'):
-                yf_symbol = f"{symbol}.NS"
-            else:
-                yf_symbol = symbol
-        
-        # Create ticker with session for better reliability
-        import requests
-        session = requests.Session()
-        session.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'})
-        
-        ticker = yf.Ticker(yf_symbol, session=session)
-        
-        # Try multiple methods to get data
-        current_price = None
-        prev_close = None
-        volume = 0
-        company_name = symbol
-        
-        # Method 1: Try fast_info (newer yfinance feature)
-        try:
-            fast_info = ticker.fast_info
-            if hasattr(fast_info, 'last_price') and fast_info.last_price:
-                current_price = float(fast_info.last_price)
-                prev_close = float(fast_info.previous_close) if hasattr(fast_info, 'previous_close') else current_price
-        except:
-            pass
-        
-        # Method 2: Try basic info
-        if not current_price:
-            try:
-                info = ticker.info
-                if info and 'regularMarketPrice' in info:
-                    current_price = float(info['regularMarketPrice'])
-                    prev_close = float(info.get('previousClose', current_price))
-                    volume = int(info.get('volume', 0))
-                    company_name = info.get('longName') or info.get('shortName', company_name)
-            except:
-                pass
-        
-        # Method 3: Try history data
-        if not current_price:
-            try:
-                # Try different periods
-                for period in ['1d', '2d', '5d']:
-                    hist = ticker.history(period=period, interval='1d', timeout=10)
-                    if not hist.empty:
-                        current_price = float(hist['Close'].iloc[-1])
-                        if len(hist) > 1:
-                            prev_close = float(hist['Close'].iloc[-2])
-                        else:
-                            prev_close = float(hist['Open'].iloc[-1])
-                        volume = int(hist['Volume'].iloc[-1]) if 'Volume' in hist.columns else 0
-                        break
-            except Exception as hist_e:
-                logger.error(f"History fetch failed for {yf_symbol}: {str(hist_e)}")
-        
-        # If we still don't have data, try alternative symbol formats
-        if not current_price and symbol_type == 'stock':
-            alternative_symbols = []
-            base_symbol = symbol.replace('.NS', '').replace('.BO', '')
-            
-            # Try both NSE and BSE
-            if not symbol.endswith('.BO'):
-                alternative_symbols.append(f"{base_symbol}.BO")
-            if not symbol.endswith('.NS'):
-                alternative_symbols.append(f"{base_symbol}.NS")
-            
-            for alt_symbol in alternative_symbols:
-                try:
-                    alt_ticker = yf.Ticker(alt_symbol, session=session)
-                    alt_hist = alt_ticker.history(period='1d', timeout=10)
-                    if not alt_hist.empty:
-                        current_price = float(alt_hist['Close'].iloc[-1])
-                        prev_close = float(alt_hist['Open'].iloc[-1])
-                        volume = int(alt_hist['Volume'].iloc[-1]) if 'Volume' in alt_hist.columns else 0
-                        break
-                except:
-                    continue
-        
-        if not current_price:
-            raise Exception(f"No price data available for {yf_symbol}")
-        
-        # Calculate changes
-        change_amount = current_price - prev_close if prev_close else 0
-        change_percent = (change_amount / prev_close * 100) if prev_close and prev_close != 0 else 0
-        
-        return {
-            'symbol': symbol.replace('.NS', '').replace('.BO', ''),
-            'company_name': company_name,
-            'last_price': round(current_price, 2),
-            'change': round(change_percent, 2),
-            'change_amount': round(change_amount, 2),
-            'volume': volume,
-            'market_cap': 0,  # Set to 0 for now
-            'success': True,
-            'data_source': 'yfinance_enhanced',
-            'type': symbol_type
-        }
-        
-    except Exception as e:
-        logger.error(f"Enhanced fetch failed for {symbol}: {str(e)}")
-        
-        # Database fallback for stocks
-        if symbol_type == 'stock':
-            try:
-                clean_symbol = symbol.replace('.NS', '').replace('.BO', '')
-                stock_data = StockData.objects.filter(symbol=clean_symbol).first()
-                
-                if stock_data:
-                    return {
-                        'symbol': clean_symbol,
-                        'company_name': stock_data.company_name,
-                        'last_price': float(stock_data.last_price),
-                        'change': float(stock_data.pchange),
-                        'change_amount': float(stock_data.change),
-                        'volume': stock_data.volume,
-                        'market_cap': stock_data.market_cap or 0,
-                        'success': True,
-                        'data_source': 'database_cache',
-                        'type': 'stock',
-                        'note': 'Using cached data - real-time unavailable'
-                    }
-            except Exception as db_e:
-                logger.error(f"Database fallback failed for {symbol}: {str(db_e)}")
-        
-        # Return mock data for common stocks to keep app functional
-        mock_prices = {
-            'RELIANCE': 2450.00, 'TCS': 3850.00, 'HDFCBANK': 1620.00, 'INFY': 1425.00,
-            'ICICIBANK': 950.00, 'HINDUNILVR': 2650.00, 'BHARTIARTL': 890.00,
-            'ITC': 415.00, 'SBIN': 720.00, 'BAJFINANCE': 7200.00, 'ASIANPAINT': 3200.00
-        }
-        
-        clean_symbol = symbol.replace('.NS', '').replace('.BO', '')
-        mock_price = mock_prices.get(clean_symbol, 100.00)
-        
-        return {
-            'symbol': clean_symbol,
-            'company_name': f'{clean_symbol} Limited',
-            'last_price': mock_price,
-            'change': 0.00,
-            'change_amount': 0.00,
-            'volume': 0,
-            'market_cap': 0,
-            'success': True,
-            'data_source': 'mock_data',
-            'type': symbol_type,
-            'note': 'Mock data - real-time service unavailable'
-        }
-
-
+    return stock_fetcher.get_stock_data(symbol, symbol_type)
 # Alternative: Add this as a fallback API function
 def get_stock_data_alternative_api(symbol):
     """
