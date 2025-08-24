@@ -3,6 +3,8 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.db import models
+from django.contrib.auth.models import User
 
 
 class UserProfile(models.Model):
@@ -14,7 +16,6 @@ class UserProfile(models.Model):
     def __str__(self):
         return f"{self.user.username} Profile"
 
-
 class UserSettings(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='settings')
     capital = models.DecimalField(max_digits=12, decimal_places=2, default=10000.00)
@@ -24,7 +25,6 @@ class UserSettings(models.Model):
     
     def __str__(self):
         return f"{self.user.username} Settings"
-
 
 class UserSubscription(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='calc_subscription')
@@ -37,7 +37,6 @@ class UserSubscription(models.Model):
     
     def __str__(self):
         return f"{self.user.username} - {'Paid' if self.is_paid else 'Free'}"
-
 
 class CalculationHistory(models.Model):
     DIRECTION_CHOICES = [
@@ -65,6 +64,20 @@ class CalculationHistory(models.Model):
         verbose_name_plural = "Calculation Histories"
         ordering = ['-timestamp']
 
+# Create profile automatically when user is created
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        UserProfile.objects.create(user=instance)
+        UserSettings.objects.create(user=instance)
+        UserSubscription.objects.create(user=instance)
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    if hasattr(instance, 'profile'):
+        instance.profile.save()
+    if hasattr(instance, 'settings'):
+        instance.settings.save()
 
 class StockData(models.Model):
     symbol = models.CharField(max_length=20, unique=True, db_index=True)
@@ -94,6 +107,13 @@ class StockData(models.Model):
         return 'green' if self.change >= 0 else 'red'
 
 
+class UserSettings(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    capital = models.DecimalField(max_digits=12, decimal_places=2, default=200000)
+    risk_percent = models.DecimalField(max_digits=5, decimal_places=2, default=1.0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
 class Calculation(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     symbol = models.CharField(max_length=50)
@@ -104,74 +124,3 @@ class Calculation(models.Model):
     targets = models.TextField(blank=True)
     trade_type = models.CharField(max_length=20, default='stocks')
     created_at = models.DateTimeField(auto_now_add=True)
-
-
-class TradingJournalEntry(models.Model):
-    MARKET_TYPES = [
-        ('Equity', 'Equity'),
-        ('Commodity', 'Commodity'),
-        ('Currency', 'Currency'),
-        ('Options', 'Options'),
-        ('Futures', 'Futures'),
-        ('Other', 'Other'),
-    ]
-    
-    POSITION_TYPES = [
-        ('Buy', 'Buy'),
-        ('Short', 'Short'),
-    ]
-    
-    TIME_FRAMES = [
-        ('Intraday', 'Intraday'),
-        ('Swing', 'Swing'),
-        ('Positional', 'Positional'),
-        ('Long Term', 'Long Term'),
-    ]
-    
-    STATUS_CHOICES = [
-        ('Open', 'Open'),
-        ('Closed', 'Closed'),
-    ]
-    
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    strategy_name = models.CharField(max_length=100)
-    market_type = models.CharField(max_length=20, choices=MARKET_TYPES)
-    instrument_name = models.CharField(max_length=50)
-    position = models.CharField(max_length=10, choices=POSITION_TYPES)
-    trade_date = models.DateField()
-    exit_date = models.DateField(null=True, blank=True)
-    time_frame = models.CharField(max_length=20, choices=TIME_FRAMES)
-    invested_amount = models.DecimalField(max_digits=12, decimal_places=2)
-    risk_percent = models.DecimalField(max_digits=5, decimal_places=2)
-    risk_rs = models.DecimalField(max_digits=12, decimal_places=2)
-    entry_price = models.DecimalField(max_digits=10, decimal_places=2)
-    stop_loss = models.DecimalField(max_digits=10, decimal_places=2)
-    quantity = models.IntegerField()
-    exit_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    profit_loss = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='Open')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    
-    class Meta:
-        ordering = ['-created_at']
-        
-    def __str__(self):
-        return f"{self.instrument_name} - {self.position} - {self.trade_date}"
-
-
-# Create profile automatically when user is created
-@receiver(post_save, sender=User)
-def create_user_profile(sender, instance, created, **kwargs):
-    if created:
-        UserProfile.objects.create(user=instance)
-        UserSettings.objects.create(user=instance)
-        UserSubscription.objects.create(user=instance)
-
-
-@receiver(post_save, sender=User)
-def save_user_profile(sender, instance, **kwargs):
-    if hasattr(instance, 'profile'):
-        instance.profile.save()
-    if hasattr(instance, 'settings'):
-        instance.settings.save()
