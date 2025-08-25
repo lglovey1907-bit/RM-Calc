@@ -1,23 +1,35 @@
 import os
+import time
+import requests
+import logging
+
+logger = logging.getLogger(__name__)
+
+try:
+    from django.core.cache import cache
+except ImportError:
+    class DummyCache:
+        def get(self, key): return None
+        def set(self, key, value, timeout): pass
+    cache = DummyCache()
 
 class RateLimitedStockFetcher:
+    def __init__(self):
+        self.api_key = os.environ.get("ALPHA_VANTAGE_API_KEY", "demo")
+        self.base_url = "https://www.alphavantage.co/query"
+        self.session = requests.Session()
+        self.last_request_time = 0
+        self.min_delay = 12.0
+        
     def get_stock_data(self, symbol, symbol_type="stock"):
         clean_symbol = symbol.replace(".NS", "").replace(".BO", "").upper()
         
-        basic_prices = {
-            "RELIANCE": 2445.50,
-            "TCS": 3842.75, 
-            "HDFCBANK": 1615.30,
-            "INFY": 1420.85,
-            "ICICIBANK": 948.60,
-            "HINDUNILVR": 2655.40,
-            "BHARTIARTL": 885.25,
-            "ITC": 412.80,
-            "SBIN": 718.45,
-            "BAJFINANCE": 7195.30
+        static_prices = {
+            "RELIANCE": 2445.50, "TCS": 3842.75, "HDFCBANK": 1615.30,
+            "INFY": 1420.85, "ICICIBANK": 948.60, "HINDUNILVR": 2655.40,
         }
         
-        price = basic_prices.get(clean_symbol, 150.00)
+        price = static_prices.get(clean_symbol, 150.00)
         
         return {
             "symbol": clean_symbol,
@@ -29,7 +41,7 @@ class RateLimitedStockFetcher:
             "volume": 0,
             "market_cap": 0,
             "success": True,
-            "data_source": "basic_data",
+            "data_source": "static_fallback",
             "type": symbol_type
         }
 
